@@ -1,9 +1,9 @@
 // Language Translator Extension - Popup Script
 const defaultConfig = {
     apiKey: '',
-    model: 'anthropic/claude-3.5-sonnet',
+    model: 'google/gemini-2.5-flash',
     targetLanguage: 'English',
-    wordPrompt: "Translate the word '{{text}}' to {{language}}. Provide a brief explanation if helpful.",
+    wordPrompt: "Translate the word '{{text}}' to {{language}}. Provide a brief explanation.",
     selectionPrompt: "Translate this text to {{language}}: {{text}}"
 };
 
