@@ -258,17 +258,7 @@
         }, 300);
     });
 
-    // Right-click handler
-    document.addEventListener('contextmenu', (e) => {
-        // Skip if clicking on our sidebar
-        if (e.target.closest('#language-translator-sidebar')) return;
-        
-        const word = getWordAtPosition(e.clientX, e.clientY);
-        if (word) {
-            e.preventDefault();
-            translateText(word, true);
-        }
-    });
+    // Right-click handler removed per user request
 
     document.addEventListener('keydown', (e) => {
         // Toggle sidebar with Ctrl+Shift+T
