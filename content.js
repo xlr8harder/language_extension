@@ -4,9 +4,9 @@
 
     let config = {
         apiKey: '',
-        model: 'google/gemini-2.5-flash',
+        model: 'anthropic/claude-3.5-sonnet',
         targetLanguage: 'English',
-        wordPrompt: "Translate the word '{{text}}' to {{language}}. Provide a brief explanation.",
+        wordPrompt: "Translate the word '{{text}}' to {{language}}. Provide a brief explanation if helpful.",
         selectionPrompt: "Translate this text to {{language}}: {{text}}"
     };
 
@@ -209,7 +209,38 @@
 
     // Event listeners
     let selectionTimeout;
+    let isDoubleClick = false;
+    
+    // Double-click handler - runs first and sets flag
+    document.addEventListener('dblclick', (e) => {
+        // Skip if clicking on our sidebar
+        if (e.target.closest('#language-translator-sidebar')) return;
+        
+        console.log('Double-click detected'); // Debug log
+        
+        // Set flag to prevent selectionchange from interfering
+        isDoubleClick = true;
+        
+        // Small delay to let the selection happen, then translate
+        setTimeout(() => {
+            const selection = window.getSelection().toString().trim();
+            console.log('Double-click selection:', selection); // Debug log
+            if (selection) {
+                translateText(selection, true);
+            }
+            // Reset flag after processing
+            isDoubleClick = false;
+        }, 50);
+    });
+
+    // Selection change handler - only works when sidebar is open (unless double-click)
     document.addEventListener('selectionchange', () => {
+        // Skip if this was triggered by a double-click
+        if (isDoubleClick) {
+            console.log('Skipping selectionchange due to double-click'); // Debug log
+            return;
+        }
+        
         // Only translate on highlight if sidebar is open
         if (!sidebar || !sidebar.classList.contains('visible')) {
             return;
@@ -227,6 +258,7 @@
         }, 300);
     });
 
+    // Right-click handler
     document.addEventListener('contextmenu', (e) => {
         // Skip if clicking on our sidebar
         if (e.target.closest('#language-translator-sidebar')) return;
