@@ -87,12 +87,12 @@ Customize how translations work by editing the prompt templates in settings:
 
 **Word Translation Prompt** (for double-clicked words):
 ```
-Translate the word '{{text}}' to {{language}}. Provide a brief explanation if helpful.
+Translate the word '{{text}}' into {{language}}. Provide a brief explanation.
 ```
 
 **Selection Translation Prompt** (for highlighted text):
 ```
-Translate this text to {{language}}: {{text}}
+Translate this text into {{language}}: {{text}}
 ```
 
 **Template Variables:**

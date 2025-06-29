@@ -3,8 +3,8 @@ const defaultConfig = {
     apiKey: '',
     model: 'google/gemini-2.5-flash',
     targetLanguage: 'English',
-    wordPrompt: "Translate the word '{{text}}' to {{language}}. Provide a brief explanation.",
-    selectionPrompt: "Translate this text to {{language}}: {{text}}"
+    wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation.",
+    selectionPrompt: "Translate this text into {{language}}: {{text}}"
 };
 
 // Load saved configuration

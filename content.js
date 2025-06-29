@@ -6,8 +6,8 @@
         apiKey: '',
         model: 'anthropic/claude-3.5-sonnet',
         targetLanguage: 'English',
-        wordPrompt: "Translate the word '{{text}}' to {{language}}. Provide a brief explanation if helpful.",
-        selectionPrompt: "Translate this text to {{language}}: {{text}}"
+        wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful.",
+        selectionPrompt: "Translate this text into {{language}}: {{text}}"
     };
 
     let sidebar = null;
