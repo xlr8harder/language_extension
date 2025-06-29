@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Language Learning Translator",
+  "version": "1.0",
+  "description": "Translate words and phrases by highlighting or right-clicking",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "https://openrouter.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Language Translator Settings"
+  }
+}
