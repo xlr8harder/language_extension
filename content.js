@@ -209,17 +209,27 @@
 
     // Event listeners
     let selectionTimeout;
-    let isDoubleClick = false;
+    let lastTranslationTime = 0;
+    const TRANSLATION_COOLDOWN = 500; // 500ms cooldown between translations
     
-    // Double-click handler - runs first and sets flag
+    function canTranslate() {
+        const now = Date.now();
+        if (now - lastTranslationTime < TRANSLATION_COOLDOWN) {
+            console.log('Translation on cooldown, skipping');
+            return false;
+        }
+        lastTranslationTime = now;
+        return true;
+    }
+    
+    // Double-click handler
     document.addEventListener('dblclick', (e) => {
         // Skip if clicking on our sidebar
         if (e.target.closest('#language-translator-sidebar')) return;
         
-        console.log('Double-click detected'); // Debug log
+        if (!canTranslate()) return;
         
-        // Set flag to prevent selectionchange from interfering
-        isDoubleClick = true;
+        console.log('Double-click detected'); // Debug log
         
         // Small delay to let the selection happen, then translate
         setTimeout(() => {
@@ -228,19 +238,11 @@
             if (selection) {
                 translateText(selection, true);
             }
-            // Reset flag after processing
-            isDoubleClick = false;
         }, 50);
     });
 
-    // Selection change handler - only works when sidebar is open (unless double-click)
+    // Selection change handler - only works when sidebar is open
     document.addEventListener('selectionchange', () => {
-        // Skip if this was triggered by a double-click
-        if (isDoubleClick) {
-            console.log('Skipping selectionchange due to double-click'); // Debug log
-            return;
-        }
-        
         // Only translate on highlight if sidebar is open
         if (!sidebar || !sidebar.classList.contains('visible')) {
             return;
@@ -248,6 +250,8 @@
         
         clearTimeout(selectionTimeout);
         selectionTimeout = setTimeout(() => {
+            if (!canTranslate()) return;
+            
             const selection = window.getSelection();
             const selectedText = selection.toString().trim();
             
