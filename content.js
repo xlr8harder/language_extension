@@ -140,7 +140,7 @@
                 body: JSON.stringify({
                     model: config.model,
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 500,
+                    max_tokens: 2000,
                     temperature: 0.3
                 })
             });
