@@ -140,7 +140,7 @@
                 body: JSON.stringify({
                     model: config.model,
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 4000,
+                    max_tokens: 500,
                     temperature: 0.3
                 })
             });
@@ -222,10 +222,38 @@
         return true;
     }
     
+    // Check if we're in an editable context
+    function isInEditableContext(element) {
+        // Check if the element itself or any parent is editable
+        let current = element;
+        while (current && current !== document.body) {
+            // Input fields
+            if (current.tagName === 'INPUT' || current.tagName === 'TEXTAREA') {
+                return true;
+            }
+            // Contenteditable elements
+            if (current.contentEditable === 'true') {
+                return true;
+            }
+            // Code editors often have these attributes
+            if (current.getAttribute('role') === 'textbox') {
+                return true;
+            }
+            current = current.parentElement;
+        }
+        return false;
+    }
+    
     // Double-click handler
     document.addEventListener('dblclick', (e) => {
         // Skip if clicking on our sidebar
         if (e.target.closest('#language-translator-sidebar')) return;
+        
+        // Skip if in an editable context
+        if (isInEditableContext(e.target)) {
+            console.log('Double-click in editable context, skipping translation');
+            return;
+        }
         
         if (!canTranslate()) return;
         
@@ -248,11 +276,25 @@
             return;
         }
         
+        // Check if current selection is in an editable context
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (range.startContainer) {
+                const element = range.startContainer.nodeType === Node.TEXT_NODE 
+                    ? range.startContainer.parentElement 
+                    : range.startContainer;
+                if (isInEditableContext(element)) {
+                    console.log('Selection in editable context, skipping translation');
+                    return;
+                }
+            }
+        }
+        
         clearTimeout(selectionTimeout);
         selectionTimeout = setTimeout(() => {
             if (!canTranslate()) return;
             
-            const selection = window.getSelection();
             const selectedText = selection.toString().trim();
             
             if (selectedText.length > 1) {
