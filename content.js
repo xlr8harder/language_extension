@@ -4,7 +4,7 @@
 
     let config = {
         apiKey: '',
-        model: 'anthropic/claude-3.5-sonnet',
+        model: 'google/gemini-2.5-flash',
         targetLanguage: 'English',
         wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful.",
         selectionPrompt: "Translate this text into {{language}}: {{text}}"
