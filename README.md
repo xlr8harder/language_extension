@@ -75,11 +75,17 @@ A Chrome/Edge browser extension that helps you learn foreign languages by provid
 
 You can use any model available on OpenRouter. Here are some popular choices:
 
-- `anthropic/claude-3.5-sonnet` - Best overall translation quality
-- `openai/gpt-4o-mini` - Fast and cost-effective
-- `openai/gpt-4o` - Premium quality translations  
-- `google/gemini-pro-1.5` - Good alternative option
-- `meta-llama/llama-3.1-8b-instruct` - Open source option
+# Faster, cheaper models:
+- `google/gemini-2.5-flash`
+- `openai/gpt-4.1-mini`
+
+# Larger, slower models:
+- `anthropic/claude-opus-4`
+- `anthropic/claude-sonnet-4`
+- `google/gemini-2.5-pro`
+- `deepseek/deepseek-chat-v3-0324`
+- `openai/gpt-4o`
+- `openai/gpt-4.1`
 
 ### Custom Translation Prompts
 
