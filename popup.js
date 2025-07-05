@@ -3,8 +3,9 @@ const defaultConfig = {
     apiKey: '',
     model: 'google/gemini-2.5-flash',
     targetLanguage: 'English',
-    wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation.",
-    selectionPrompt: "Translate this text into {{language}}: {{text}}"
+    wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful.",
+    selectionPrompt: "Translate this text into {{language}}: {{text}}",
+    maxConversationTurns: 3
 };
 
 // Load saved configuration
@@ -18,6 +19,7 @@ async function loadConfig() {
         document.getElementById('targetLanguage').value = config.targetLanguage;
         document.getElementById('wordPrompt').value = config.wordPrompt;
         document.getElementById('selectionPrompt').value = config.selectionPrompt;
+        document.getElementById('maxTurns').value = config.maxConversationTurns;
     } catch (error) {
         showStatus('Failed to load settings', 'error');
     }
@@ -30,7 +32,8 @@ async function saveConfig() {
         model: document.getElementById('model').value,
         targetLanguage: document.getElementById('targetLanguage').value,
         wordPrompt: document.getElementById('wordPrompt').value,
-        selectionPrompt: document.getElementById('selectionPrompt').value
+        selectionPrompt: document.getElementById('selectionPrompt').value,
+        maxConversationTurns: parseInt(document.getElementById('maxTurns').value) || 3
     };
 
     try {

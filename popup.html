@@ -120,12 +120,17 @@
 
     <div class="config-group">
         <label for="wordPrompt">Word Translation Prompt</label>
-        <textarea id="wordPrompt" placeholder="Translate the word '{{text}}' to {{language}}. Provide a brief explanation if helpful."></textarea>
+        <textarea id="wordPrompt" placeholder="Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful."></textarea>
     </div>
 
     <div class="config-group">
         <label for="selectionPrompt">Selection Translation Prompt</label>
-        <textarea id="selectionPrompt" placeholder="Translate this text to {{language}}: {{text}}"></textarea>
+        <textarea id="selectionPrompt" placeholder="Translate this text into {{language}}: {{text}}"></textarea>
+    </div>
+
+    <div class="config-group">
+        <label for="maxTurns">Max Follow-up Conversation Turns</label>
+        <input type="number" id="maxTurns" min="1" max="10" placeholder="3" />
     </div>
 
     <button class="save-button" id="saveButton">Save Settings</button>
@@ -137,8 +142,9 @@
         • Ctrl+Shift+T: Toggle sidebar<br>
         • Escape: Close sidebar<br><br>
         <strong>Usage:</strong><br>
-        • Highlight text for automatic translation<br>
-        • Right-click words for instant translation
+        • Double-click words for translation<br>
+        • Highlight text when sidebar is open<br>
+        • Use "Ask follow-up" for questions
     </div>
 
     <script src="popup.js"></script>

@@ -7,7 +7,8 @@
         model: 'google/gemini-2.5-flash',
         targetLanguage: 'English',
         wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful.",
-        selectionPrompt: "Translate this text into {{language}}: {{text}}"
+        selectionPrompt: "Translate this text into {{language}}: {{text}}",
+        maxConversationTurns: 3
     };
 
     let sidebar = null;
@@ -152,13 +153,42 @@
             const data = await response.json();
             const translation = data.choices[0].message.content;
 
-            // Update with translation
+            // Update with translation and add follow-up functionality
             const loadingElement = document.getElementById(loadingId);
             if (loadingElement) {
                 loadingElement.innerHTML = `
                     <div class="original-text">${trimmedText}</div>
                     <div class="translated-text">${renderMarkdown(translation)}</div>
+                    <div class="follow-up-section">
+                        <button class="follow-up-button" data-translation-id="${loadingId}">Ask follow-up</button>
+                        <div class="follow-up-input-container" id="input-${loadingId}" style="display: none;">
+                            <input type="text" placeholder="Ask a question about this translation..." class="follow-up-input" />
+                            <button class="send-follow-up" data-translation-id="${loadingId}">Send</button>
+                        </div>
+                        <div class="conversation-history" id="history-${loadingId}"></div>
+                    </div>
                 `;
+                
+                // Store conversation history for this translation
+                loadingElement.conversationHistory = [
+                    { role: 'user', content: prompt },
+                    { role: 'assistant', content: translation }
+                ];
+                
+                // Add event listeners for follow-up functionality
+                const followUpButton = loadingElement.querySelector('.follow-up-button');
+                const sendButton = loadingElement.querySelector('.send-follow-up');
+                const input = loadingElement.querySelector('.follow-up-input');
+                
+                followUpButton.addEventListener('click', () => toggleFollowUp(loadingId));
+                sendButton.addEventListener('click', () => sendFollowUp(loadingId));
+                
+                // Add enter key support for follow-up input
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendFollowUp(loadingId);
+                    }
+                });
             }
 
         } catch (error) {
@@ -204,6 +234,99 @@
                     Select text or right-click words to see translations
                 </div>
             `;
+        }
+    }
+
+    // Follow-up functionality
+    function toggleFollowUp(translationId) {
+        const inputContainer = document.getElementById(`input-${translationId}`);
+        const button = document.querySelector(`#${translationId} .follow-up-button`);
+        
+        if (inputContainer.style.display === 'none') {
+            inputContainer.style.display = 'flex';
+            button.textContent = 'Hide follow-up';
+            // Focus on the input
+            const input = inputContainer.querySelector('.follow-up-input');
+            setTimeout(() => input.focus(), 100);
+        } else {
+            inputContainer.style.display = 'none';
+            button.textContent = 'Ask follow-up';
+        }
+    }
+
+    async function sendFollowUp(translationId) {
+        const translationElement = document.getElementById(translationId);
+        const input = translationElement.querySelector('.follow-up-input');
+        const question = input.value.trim();
+        
+        if (!question) return;
+        
+        const historyContainer = document.getElementById(`history-${translationId}`);
+        
+        // Add user question to UI
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'follow-up-question';
+        questionDiv.innerHTML = `<strong>You:</strong> ${question}`;
+        historyContainer.appendChild(questionDiv);
+        
+        // Add loading response
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'follow-up-response';
+        loadingDiv.innerHTML = `<strong>AI:</strong> <span class="loading"></span> Thinking...`;
+        historyContainer.appendChild(loadingDiv);
+        
+        // Clear input and hide it
+        input.value = '';
+        document.getElementById(`input-${translationId}`).style.display = 'none';
+        document.querySelector(`#${translationId} .follow-up-button`).textContent = 'Ask follow-up';
+        
+        try {
+            // Get conversation history and add new question
+            const conversationHistory = translationElement.conversationHistory || [];
+            const messages = [...conversationHistory];
+            
+            // Keep only the last N turns (configurable)
+            const maxTurns = config.maxConversationTurns * 2; // *2 because each turn has user+assistant
+            if (messages.length > maxTurns) {
+                messages.splice(0, messages.length - maxTurns);
+            }
+            
+            messages.push({ role: 'user', content: question });
+
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${config.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Language Learning Extension'
+                },
+                body: JSON.stringify({
+                    model: config.model,
+                    messages: messages,
+                    max_tokens: 500,
+                    temperature: 0.3
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const answer = data.choices[0].message.content;
+
+            // Update loading response with actual answer
+            loadingDiv.innerHTML = `<strong>AI:</strong> ${renderMarkdown(answer)}`;
+            
+            // Update conversation history
+            conversationHistory.push({ role: 'user', content: question });
+            conversationHistory.push({ role: 'assistant', content: answer });
+            translationElement.conversationHistory = conversationHistory;
+
+        } catch (error) {
+            console.error('Follow-up error:', error);
+            loadingDiv.innerHTML = `<strong>AI:</strong> <span class="error">Failed to get response: ${error.message}</span>`;
         }
     }
 
