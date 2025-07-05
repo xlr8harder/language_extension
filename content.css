@@ -225,6 +225,66 @@
     color: #dc3545;
 }
 
+.response-tabs {
+    margin-top: 8px;
+}
+
+.tab-headers {
+    display: flex;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 10px;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    color: #4285f4;
+}
+
+.tab-button.active {
+    color: #4285f4;
+    border-bottom-color: #4285f4;
+    font-weight: 500;
+}
+
+.tab-content {
+    min-height: 100px;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.verify-button {
+    background: #ffc107;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #212529;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-left: 8px;
+}
+
+.verify-button:hover {
+    background: #e0a800;
+    border-color: #e0a800;
+}
+
 .loading {
     display: inline-block;
     width: 12px;

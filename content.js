@@ -8,7 +8,9 @@
         targetLanguage: 'English',
         wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful.",
         selectionPrompt: "Translate this text into {{language}}: {{text}}",
-        maxConversationTurns: 3
+        maxConversationTurns: 3,
+        verificationModel: '',
+        verificationPrompt: "Please verify this translation and provide the correct version if needed:\n\nOriginal: {{text}}\nTranslation: {{translation}}\nTarget Language: {{language}}"
     };
 
     let sidebar = null;
@@ -141,7 +143,7 @@
                 body: JSON.stringify({
                     model: config.model,
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 500,
+                    max_tokens: 4000,
                     temperature: 0.3
                 })
             });
@@ -156,39 +158,59 @@
             // Update with translation and add follow-up functionality
             const loadingElement = document.getElementById(loadingId);
             if (loadingElement) {
+                const verifyButton = config.verificationModel ? 
+                    `<button class="verify-button" data-translation-id="${loadingId}">Verify</button>` : '';
+                
                 loadingElement.innerHTML = `
                     <div class="original-text">${trimmedText}</div>
-                    <div class="translated-text">${renderMarkdown(translation)}</div>
-                    <div class="follow-up-section">
-                        <button class="follow-up-button" data-translation-id="${loadingId}">Ask follow-up</button>
-                        <div class="follow-up-input-container" id="input-${loadingId}" style="display: none;">
-                            <input type="text" placeholder="Ask a question about this translation..." class="follow-up-input" />
-                            <button class="send-follow-up" data-translation-id="${loadingId}">Send</button>
+                    <div class="response-tabs">
+                        <div class="tab-headers">
+                            <button class="tab-button active" data-tab="translation">Translation</button>
+                            <button class="tab-button" data-tab="verification" style="display: none;">Verification</button>
                         </div>
-                        <div class="conversation-history" id="history-${loadingId}"></div>
+                        <div class="tab-content">
+                            <div class="tab-panel active" data-panel="translation">
+                                <div class="translated-text">${renderMarkdown(translation)}</div>
+                                <div class="follow-up-section">
+                                    <button class="follow-up-button" data-translation-id="${loadingId}" data-tab="translation">Ask follow-up</button>
+                                    ${verifyButton}
+                                    <div class="follow-up-input-container" id="input-${loadingId}-translation" style="display: none;">
+                                        <input type="text" placeholder="Ask a question about this translation..." class="follow-up-input" />
+                                        <button class="send-follow-up" data-translation-id="${loadingId}" data-tab="translation">Send</button>
+                                    </div>
+                                    <div class="conversation-history" id="history-${loadingId}-translation"></div>
+                                </div>
+                            </div>
+                            <div class="tab-panel" data-panel="verification" style="display: none;">
+                                <div class="translated-text" id="verification-content-${loadingId}"></div>
+                                <div class="follow-up-section">
+                                    <button class="follow-up-button" data-translation-id="${loadingId}" data-tab="verification">Ask follow-up</button>
+                                    <div class="follow-up-input-container" id="input-${loadingId}-verification" style="display: none;">
+                                        <input type="text" placeholder="Ask a question about this verification..." class="follow-up-input" />
+                                        <button class="send-follow-up" data-translation-id="${loadingId}" data-tab="verification">Send</button>
+                                    </div>
+                                    <div class="conversation-history" id="history-${loadingId}-verification"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
                 
-                // Store conversation history for this translation
-                loadingElement.conversationHistory = [
+                // Store conversation history for translation
+                loadingElement.translationHistory = [
                     { role: 'user', content: prompt },
                     { role: 'assistant', content: translation }
                 ];
+                loadingElement.verificationHistory = [];
+                loadingElement.originalText = trimmedText;
+                loadingElement.originalTranslation = translation;
                 
-                // Add event listeners for follow-up functionality
-                const followUpButton = loadingElement.querySelector('.follow-up-button');
-                const sendButton = loadingElement.querySelector('.send-follow-up');
-                const input = loadingElement.querySelector('.follow-up-input');
-                
-                followUpButton.addEventListener('click', () => toggleFollowUp(loadingId));
-                sendButton.addEventListener('click', () => sendFollowUp(loadingId));
-                
-                // Add enter key support for follow-up input
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        sendFollowUp(loadingId);
-                    }
-                });
+                // Add event listeners
+                setupTabListeners(loadingElement, loadingId);
+                setupFollowUpListeners(loadingElement, loadingId);
+                if (config.verificationModel) {
+                    setupVerifyListener(loadingElement, loadingId);
+                }
             }
 
         } catch (error) {
@@ -237,10 +259,71 @@
         }
     }
 
-    // Follow-up functionality
-    function toggleFollowUp(translationId) {
-        const inputContainer = document.getElementById(`input-${translationId}`);
-        const button = document.querySelector(`#${translationId} .follow-up-button`);
+    // Setup functions for event listeners
+    function setupTabListeners(element, translationId) {
+        const tabButtons = element.querySelectorAll('.tab-button');
+        const tabPanels = element.querySelectorAll('.tab-panel');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.dataset.tab;
+                
+                // Update active states
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanels.forEach(panel => {
+                    panel.style.display = 'none';
+                    panel.classList.remove('active');
+                });
+                
+                button.classList.add('active');
+                const targetPanel = element.querySelector(`[data-panel="${targetTab}"]`);
+                targetPanel.style.display = 'block';
+                targetPanel.classList.add('active');
+            });
+        });
+    }
+    
+    function setupFollowUpListeners(element, translationId) {
+        const followUpButtons = element.querySelectorAll('.follow-up-button');
+        const sendButtons = element.querySelectorAll('.send-follow-up');
+        const inputs = element.querySelectorAll('.follow-up-input');
+        
+        followUpButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+                toggleFollowUp(translationId, tab);
+            });
+        });
+        
+        sendButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+                sendFollowUp(translationId, tab);
+            });
+        });
+        
+        inputs.forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const sendButton = e.target.closest('.follow-up-section').querySelector('.send-follow-up');
+                    const tab = sendButton.dataset.tab;
+                    sendFollowUp(translationId, tab);
+                }
+            });
+        });
+    }
+    
+    function setupVerifyListener(element, translationId) {
+        const verifyButton = element.querySelector('.verify-button');
+        if (verifyButton) {
+            verifyButton.addEventListener('click', () => verifyTranslation(translationId));
+        }
+    }
+
+    // Follow-up functionality (updated for tabs)
+    function toggleFollowUp(translationId, tab = 'translation') {
+        const inputContainer = document.getElementById(`input-${translationId}-${tab}`);
+        const button = document.querySelector(`#${translationId} .follow-up-button[data-tab="${tab}"]`);
         
         if (inputContainer.style.display === 'none') {
             inputContainer.style.display = 'flex';
@@ -254,14 +337,14 @@
         }
     }
 
-    async function sendFollowUp(translationId) {
+    async function sendFollowUp(translationId, tab = 'translation') {
         const translationElement = document.getElementById(translationId);
-        const input = translationElement.querySelector('.follow-up-input');
+        const input = translationElement.querySelector(`#input-${translationId}-${tab} .follow-up-input`);
         const question = input.value.trim();
         
         if (!question) return;
         
-        const historyContainer = document.getElementById(`history-${translationId}`);
+        const historyContainer = document.getElementById(`history-${translationId}-${tab}`);
         
         // Add user question to UI
         const questionDiv = document.createElement('div');
@@ -277,16 +360,20 @@
         
         // Clear input and hide it
         input.value = '';
-        document.getElementById(`input-${translationId}`).style.display = 'none';
-        document.querySelector(`#${translationId} .follow-up-button`).textContent = 'Ask follow-up';
+        document.getElementById(`input-${translationId}-${tab}`).style.display = 'none';
+        document.querySelector(`#${translationId} .follow-up-button[data-tab="${tab}"]`).textContent = 'Ask follow-up';
         
         try {
-            // Get conversation history and add new question
-            const conversationHistory = translationElement.conversationHistory || [];
+            // Get appropriate conversation history and model
+            const conversationHistory = tab === 'translation' ? 
+                translationElement.translationHistory : 
+                translationElement.verificationHistory;
+            const model = tab === 'translation' ? config.model : config.verificationModel;
+            
             const messages = [...conversationHistory];
             
             // Keep only the last N turns (configurable)
-            const maxTurns = config.maxConversationTurns * 2; // *2 because each turn has user+assistant
+            const maxTurns = config.maxConversationTurns * 2;
             if (messages.length > maxTurns) {
                 messages.splice(0, messages.length - maxTurns);
             }
@@ -302,9 +389,9 @@
                     'X-Title': 'Language Learning Extension'
                 },
                 body: JSON.stringify({
-                    model: config.model,
+                    model: model,
                     messages: messages,
-                    max_tokens: 500,
+                    max_tokens: 4000,
                     temperature: 0.3
                 })
             });
@@ -319,14 +406,86 @@
             // Update loading response with actual answer
             loadingDiv.innerHTML = `<strong>AI:</strong> ${renderMarkdown(answer)}`;
             
-            // Update conversation history
+            // Update appropriate conversation history
             conversationHistory.push({ role: 'user', content: question });
             conversationHistory.push({ role: 'assistant', content: answer });
-            translationElement.conversationHistory = conversationHistory;
+            
+            if (tab === 'translation') {
+                translationElement.translationHistory = conversationHistory;
+            } else {
+                translationElement.verificationHistory = conversationHistory;
+            }
 
         } catch (error) {
             console.error('Follow-up error:', error);
             loadingDiv.innerHTML = `<strong>AI:</strong> <span class="error">Failed to get response: ${error.message}</span>`;
+        }
+    }
+    
+    // Verification functionality
+    async function verifyTranslation(translationId) {
+        const translationElement = document.getElementById(translationId);
+        const verificationTab = translationElement.querySelector('[data-tab="verification"]');
+        const verificationPanel = translationElement.querySelector('[data-panel="verification"]');
+        const verificationContent = document.getElementById(`verification-content-${translationId}`);
+        
+        // Show verification tab
+        verificationTab.style.display = 'block';
+        
+        // Switch to verification tab
+        translationElement.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        translationElement.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.style.display = 'none';
+            panel.classList.remove('active');
+        });
+        verificationTab.classList.add('active');
+        verificationPanel.style.display = 'block';
+        verificationPanel.classList.add('active');
+        
+        // Show loading
+        verificationContent.innerHTML = '<span class="loading"></span> Verifying translation...';
+        
+        try {
+            const verificationPrompt = config.verificationPrompt
+                .replace('{{text}}', translationElement.originalText)
+                .replace('{{translation}}', translationElement.originalTranslation)
+                .replace('{{language}}', config.targetLanguage);
+
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${config.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Language Learning Extension'
+                },
+                body: JSON.stringify({
+                    model: config.verificationModel,
+                    messages: [{ role: 'user', content: verificationPrompt }],
+                    max_tokens: 4000,
+                    temperature: 0.3
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const verification = data.choices[0].message.content;
+
+            // Update verification content
+            verificationContent.innerHTML = renderMarkdown(verification);
+            
+            // Initialize verification conversation history
+            translationElement.verificationHistory = [
+                { role: 'user', content: verificationPrompt },
+                { role: 'assistant', content: verification }
+            ];
+
+        } catch (error) {
+            console.error('Verification error:', error);
+            verificationContent.innerHTML = `<span class="error">Verification failed: ${error.message}</span>`;
         }
     }
 

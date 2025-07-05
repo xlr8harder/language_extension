@@ -5,7 +5,9 @@ const defaultConfig = {
     targetLanguage: 'English',
     wordPrompt: "Translate the word '{{text}}' into {{language}}. Provide a brief explanation if helpful.",
     selectionPrompt: "Translate this text into {{language}}: {{text}}",
-    maxConversationTurns: 3
+    maxConversationTurns: 3,
+    verificationModel: '',
+    verificationPrompt: "Please verify this translation and provide the correct version if needed:\n\nOriginal: {{text}}\nTranslation: {{translation}}\nTarget Language: {{language}}"
 };
 
 // Load saved configuration
@@ -14,12 +16,14 @@ async function loadConfig() {
         const result = await chrome.storage.sync.get('translatorConfig');
         const config = result.translatorConfig || defaultConfig;
         
-        document.getElementById('apiKey').value = config.apiKey;
-        document.getElementById('model').value = config.model;
-        document.getElementById('targetLanguage').value = config.targetLanguage;
-        document.getElementById('wordPrompt').value = config.wordPrompt;
-        document.getElementById('selectionPrompt').value = config.selectionPrompt;
-        document.getElementById('maxTurns').value = config.maxConversationTurns;
+        document.getElementById('apiKey').value = config.apiKey || '';
+        document.getElementById('model').value = config.model || defaultConfig.model;
+        document.getElementById('targetLanguage').value = config.targetLanguage || defaultConfig.targetLanguage;
+        document.getElementById('wordPrompt').value = config.wordPrompt || defaultConfig.wordPrompt;
+        document.getElementById('selectionPrompt').value = config.selectionPrompt || defaultConfig.selectionPrompt;
+        document.getElementById('maxTurns').value = config.maxConversationTurns || defaultConfig.maxConversationTurns;
+        document.getElementById('verificationModel').value = config.verificationModel || '';
+        document.getElementById('verificationPrompt').value = config.verificationPrompt || defaultConfig.verificationPrompt;
     } catch (error) {
         showStatus('Failed to load settings', 'error');
     }
@@ -33,7 +37,9 @@ async function saveConfig() {
         targetLanguage: document.getElementById('targetLanguage').value,
         wordPrompt: document.getElementById('wordPrompt').value,
         selectionPrompt: document.getElementById('selectionPrompt').value,
-        maxConversationTurns: parseInt(document.getElementById('maxTurns').value) || 3
+        maxConversationTurns: parseInt(document.getElementById('maxTurns').value) || 3,
+        verificationModel: document.getElementById('verificationModel').value,
+        verificationPrompt: document.getElementById('verificationPrompt').value
     };
 
     try {
